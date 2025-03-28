@@ -125,12 +125,12 @@ INSERT INTO Booking (ID_booking, ID_room, ID_customer, check_in_date, check_out_
 */
 
 SELECT 
-	c.name,
-	email,
-	phone,
-	COUNT(b.ID_booking) AS booking_count,
-	GROUP_CONCAT(DISTINCT h.name ORDER BY h.name SEPARATOR ', ') AS hotel_names,
-	SUM(DATEDIFF(check_out_date, check_in_date))/COUNT(b.ID_booking) AS avg_duration
+    c.name,
+    email,
+    phone,
+    COUNT(b.ID_booking) AS booking_count,
+    GROUP_CONCAT(DISTINCT h.name ORDER BY h.name SEPARATOR ', ') AS hotel_names,
+    SUM(DATEDIFF(check_out_date, check_in_date))/COUNT(b.ID_booking) AS avg_duration
 FROM 
 	Customer c
 LEFT JOIN
