@@ -174,11 +174,11 @@ WITH RECURSIVE employee_hierarchy AS (
 )
 
 SELECT 
-	EmployeeID,
-	EmployeeName,
-	ManagerID,
-	DepartmentName,
-	RoleName,
+    EmployeeID,
+    EmployeeName,
+    ManagerID,
+    DepartmentName,
+    RoleName,
     GROUP_CONCAT(DISTINCT Projects.ProjectName ORDER BY Projects.ProjectName SEPARATOR ', ') AS ProjectName,
     GROUP_CONCAT(DISTINCT Tasks.TaskName ORDER BY Tasks.TaskName SEPARATOR ', ') AS TaskNames
 FROM 
@@ -251,11 +251,11 @@ WITH RECURSIVE employee_hierarchy AS (
 )
 
 SELECT 
-	EmployeeID,
-	EmployeeName,
-	ManagerID,
-	DepartmentName,
-	RoleName,
+    EmployeeID,
+    EmployeeName,
+    ManagerID,
+    DepartmentName,
+    RoleName,
     GROUP_CONCAT(DISTINCT Projects.ProjectName ORDER BY Projects.ProjectName SEPARATOR ', ') AS ProjectName,
     GROUP_CONCAT(DISTINCT Tasks.TaskName ORDER BY Tasks.TaskName SEPARATOR ', ') AS TaskNames,
     COUNT(DISTINCT Tasks.TaskName) AS TotalTasks,
