@@ -145,33 +145,61 @@ INSERT INTO Tasks (TaskID, TaskName, AssignedTo, ProjectID) VALUES
 
 */
 
-SELECT
-*
-FROM
-Employees
-
 
 WITH RECURSIVE employee_hierarchy AS (
 	SELECT 
 		EmployeeID, 
-		Name,
-		ManagerID
+		Name AS EmployeeName,
+		ManagerID,
+		DepartmentID,
+		RoleID
+		
 	FROM
 		Employees
 	WHERE
-		ManagerID = 1
+		ManagerID = 1 OR ManagerID IS NULL
 		
 	UNION
 	
 	SELECT
 		e.EmployeeID, 
-		e.Name,
-		e.ManagerID
+		e.Name AS EmployeeName,
+		e.ManagerID,
+		e.DepartmentID,
+		e.RoleID
 	FROM
 		Employees e
 	JOIN employee_hierarchy eh
 		ON e.ManagerID = eh.EmployeeID
-	
 )
 
-SELECT * FROM employee_hierarchy ORDER BY Name;
+SELECT 
+	EmployeeID,
+	EmployeeName,
+	ManagerID,
+	DepartmentName,
+	RoleName,
+    GROUP_CONCAT(DISTINCT Projects.ProjectName ORDER BY Projects.ProjectName SEPARATOR ', ') AS ProjectName,
+    GROUP_CONCAT(DISTINCT Tasks.TaskName ORDER BY Tasks.TaskName SEPARATOR ', ') AS TaskNames
+FROM 
+	employee_hierarchy eh
+LEFT JOIN
+	Departments
+ON
+	Departments.DepartmentID = eh.DepartmentID
+LEFT JOIN
+	Tasks
+ON
+	eh.EmployeeID = Tasks.AssignedTo
+LEFT JOIN
+	Roles
+ON
+	Roles.RoleID = eh.RoleID
+LEFT JOIN
+	Projects
+ON
+	Departments.DepartmentID = Projects.DepartmentID
+GROUP BY
+    eh.EmployeeID, eh.EmployeeName, eh.ManagerID, Departments.DepartmentName, Roles.RoleName
+ORDER BY 
+	EmployeeName;
