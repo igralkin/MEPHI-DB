@@ -200,7 +200,7 @@ LEFT JOIN
 ON
 	Departments.DepartmentID = Projects.DepartmentID
 GROUP BY
-    eh.EmployeeID, eh.EmployeeName, eh.ManagerID, Departments.DepartmentName, Roles.RoleName
+	eh.EmployeeID, eh.EmployeeName, eh.ManagerID, Departments.DepartmentName, Roles.RoleName
 ORDER BY 
 	EmployeeName;
 
@@ -256,7 +256,7 @@ SELECT
     ManagerID,
     DepartmentName,
     RoleName,
-    GROUP_CONCAT(DISTINCT Projects.ProjectName ORDER BY Projects.ProjectName SEPARATOR ', ') AS ProjectName,
+    GROUP_CONCAT(DISTINCT Projects.ProjectName ORDER BY Projects.ProjectName SEPARATOR ', ') AS ProjectNames,
     GROUP_CONCAT(DISTINCT Tasks.TaskName ORDER BY Tasks.TaskName SEPARATOR ', ') AS TaskNames,
     COUNT(DISTINCT Tasks.TaskName) AS TotalTasks,
     (SELECT COUNT(*) FROM Employees e WHERE e.ManagerID = eh.EmployeeID) AS TotalSubordinates
@@ -279,6 +279,87 @@ LEFT JOIN
 ON
 	Departments.DepartmentID = Projects.DepartmentID
 GROUP BY
-    eh.EmployeeID, eh.EmployeeName, eh.ManagerID, Departments.DepartmentName, Roles.RoleName
+	eh.EmployeeID, eh.EmployeeName, eh.ManagerID, Departments.DepartmentName, Roles.RoleName
+ORDER BY 
+	EmployeeName;
+
+
+/*
+Задача 3
+
+Условие
+
+Найти всех сотрудников, которые занимают роль менеджера и имеют подчиненных (то есть число подчиненных больше 0). Для каждого такого сотрудника вывести следующую информацию:
+
+    EmployeeID: идентификатор сотрудника.
+    Имя сотрудника.
+    Идентификатор менеджера.
+    Название отдела, к которому он принадлежит.
+    Название роли, которую он занимает.
+    Название проектов, к которым он относится (если есть, конкатенированные в одном столбце).
+    Название задач, назначенных этому сотруднику (если есть, конкатенированные в одном столбце).
+    Общее количество подчиненных у каждого сотрудника (включая их подчиненных).
+    Если у сотрудника нет назначенных проектов или задач, отобразить NULL.
+*/
+
+WITH RECURSIVE employee_hierarchy AS (
+	SELECT 
+		EmployeeID, 
+		Name AS EmployeeName,
+		ManagerID,
+		DepartmentID,
+		RoleID
+		
+	FROM
+		Employees
+	WHERE
+		ManagerID = 1 OR ManagerID IS NULL
+		
+	UNION
+	
+	SELECT
+		e.EmployeeID, 
+		e.Name AS EmployeeName,
+		e.ManagerID,
+		e.DepartmentID,
+		e.RoleID
+	FROM
+		Employees e
+	JOIN employee_hierarchy eh
+		ON e.ManagerID = eh.EmployeeID
+)
+
+SELECT 
+    EmployeeID,
+    EmployeeName,
+    ManagerID,
+    DepartmentName,
+    RoleName,
+    GROUP_CONCAT(DISTINCT Projects.ProjectName ORDER BY Projects.ProjectName SEPARATOR ', ') AS ProjectNames,
+    GROUP_CONCAT(DISTINCT Tasks.TaskName ORDER BY Tasks.TaskName SEPARATOR ', ') AS TaskNames,
+    (SELECT COUNT(*) FROM Employees e WHERE e.ManagerID = eh.EmployeeID) AS TotalSubordinates
+FROM 
+	employee_hierarchy eh
+LEFT JOIN
+	Departments
+ON
+	Departments.DepartmentID = eh.DepartmentID
+LEFT JOIN
+	Tasks
+ON
+	eh.EmployeeID = Tasks.AssignedTo
+LEFT JOIN
+	Roles
+ON
+	Roles.RoleID = eh.RoleID
+LEFT JOIN
+	Projects
+ON
+	Departments.DepartmentID = Projects.DepartmentID
+WHERE 
+	LOWER(Roles.RoleName) = 'менеджер' AND (SELECT COUNT(*) FROM Employees e WHERE e.ManagerID = eh.EmployeeID) > 0
+GROUP BY
+	eh.EmployeeID, eh.EmployeeName, eh.ManagerID, Departments.DepartmentName, Roles.RoleName
+
 ORDER BY 
 	EmployeeName;
