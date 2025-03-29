@@ -111,7 +111,7 @@ WITH positions AS (
 	SELECT
 		car_name,
 		car_class,
-		AVG(position)/COUNT(race) AS average_position,
+		ROUND(AVG(position)/COUNT(race), 4) AS average_position,
 		COUNT(race) AS race_count
 	FROM
 		positions 
@@ -153,7 +153,7 @@ WITH cars_info AS (
 	SELECT
 		Cars.name AS car_name,
 		Cars.class AS car_class,
-		Results.position AS position, -- 	average_position,
+		ROUND(AVG(Results.position), 4) AS average_position,
 		COUNT(race) AS race_count,
 		Classes.country AS car_country
 		
@@ -174,30 +174,208 @@ SELECT
 	*
 FROM 
 	cars_info
-ORDER BY position ASC
+ORDER BY average_position, car_name
 LIMIT 1
 
 	
+/*
+Задача 3
+
+Условие
+
+Определить классы автомобилей, которые имеют наименьшую среднюю позицию в гонках, 
+и вывести информацию о каждом автомобиле из этих классов, включая его имя, среднюю позицию, количество гонок,
+в которых он участвовал, страну производства класса автомобиля, а также общее количество гонок, 
+в которых участвовали автомобили этих классов. 
+Если несколько классов имеют одинаковую среднюю позицию, выбрать все из них.
+*/	
 	
+WITH cars_info AS (
+	SELECT
+		Cars.name AS car_name,
+		Cars.class AS car_class,
+		ROUND(AVG(Results.position), 4) AS average_position,
+		COUNT(race) AS race_count,
+		Classes.country AS car_country
+	FROM
+		Cars
+	LEFT JOIN 
+		Results
+	ON
+		Cars.name = Results.car
+	LEFT JOIN 
+		Classes
+	ON
+		Cars.class = Classes.class
+	GROUP BY
+		car_name
+),
+races_by_class AS (
+	SELECT
+		car_class,
+		SUM(race_count) AS total_races
+	FROM
+		cars_info
+	GROUP BY
+		car_class
+)
+SELECT 
+	car_name,
+	cars_info.car_class,
+	average_position,
+	race_count,
+	car_country,
+	total_races
+FROM 
+	cars_info
+LEFT JOIN
+	races_by_class
+ON
+	cars_info.car_class = races_by_class.car_class
+WHERE 
+	average_position = (SELECT MIN(average_position) FROM cars_info);
+
+
+/*
+Задача 4
+
+Условие
+
+Определить, какие автомобили имеют среднюю позицию лучше (меньше) средней позиции всех автомобилей 
+в своем классе (то есть автомобилей в классе должно быть минимум два, чтобы выбрать один из них). 
+Вывести информацию об этих автомобилях, включая их имя, класс, среднюю позицию, количество гонок, 
+в которых они участвовали, и страну производства класса автомобиля. 
+Также отсортировать результаты по классу и затем по средней позиции в порядке возрастания.
+*/
 	
+
+WITH cars_info AS (
+	SELECT
+		Cars.name AS car_name,
+		Cars.class AS car_class,
+		ROUND(AVG(Results.position), 4) AS average_position,
+		COUNT(race) AS race_count,
+		Classes.country AS car_country
+	FROM
+		Cars
+	LEFT JOIN 
+		Results
+	ON
+		Cars.name = Results.car
+	LEFT JOIN 
+		Classes
+	ON
+		Cars.class = Classes.class
+	GROUP BY
+		car_name
 	
+),
+-- Классы с количеством автомобилей более одного и средней позицией по классу
+car_classes AS (
+	SELECT
+		car_class AS car_class_many,
+		AVG(average_position) AS class_average_position
+	FROM
+		cars_info
+	GROUP BY
+		car_class
+	HAVING
+		COUNT(car_class) > 1
+) 
+
+SELECT 
+	car_name,
+	car_class,
+	average_position,
+	race_count,
+	car_country
+FROM
+	cars_info
+LEFT JOIN
+	car_classes
+ON
+	cars_info.car_class = car_classes.car_class_many
+WHERE
+	car_class_many IS NOT NULL AND average_position < class_average_position;
 	
+/*
+Задача 5
+
+Условие
+
+Определить, какие классы автомобилей имеют наибольшее количество автомобилей с низкой средней позицией (больше 3.0) 
+и вывести информацию о каждом автомобиле из этих классов, 
+включая его имя, класс, среднюю позицию, количество гонок, в которых он участвовал, страну производства класса автомобиля,
+а также общее количество гонок для каждого класса. 
+Отсортировать результаты по количеству автомобилей с низкой средней позицией.
+*/	
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+WITH cars_info AS (
+	SELECT
+		Cars.name AS car_name,
+		Cars.class AS car_class,
+		ROUND(AVG(Results.position), 4) AS average_position,
+		COUNT(race) AS race_count,
+		Classes.country AS car_country
+	FROM
+		Cars
+	LEFT JOIN 
+		Results
+	ON
+		Cars.name = Results.car
+	LEFT JOIN 
+		Classes
+	ON
+		Cars.class = Classes.class
+	GROUP BY
+		car_name, car_class
+),
+slow_cars AS (
+    SELECT 
+        car_name,
+        car_class,
+        average_position,
+        race_count
+    FROM cars_info 
+    WHERE average_position > 3.0
+),
+class_races AS (
+    SELECT 
+        cars_info.car_class AS car_class,
+        COUNT(Results.race) AS total_races
+    FROM cars_info
+    JOIN Results ON cars_info.car_name = Results.car
+    GROUP BY cars_info.car_class
+),
+slow_car_classes AS (
+	SELECT
+		car_class AS car_class,
+		COUNT(race_count) AS low_position_count
+	FROM
+		slow_cars
+	GROUP BY
+		car_class
+) 
+SELECT 
+	slow_cars.car_name,
+	slow_cars.car_class,
+	slow_cars.average_position,
+	slow_cars.race_count,
+	car_country,
+	total_races,
+	low_position_count
+FROM 
+	slow_cars
+JOIN
+	cars_info
+ON
+	slow_cars.car_name = cars_info.car_name
+JOIN
+	slow_car_classes
+ON
+	cars_info.car_class = slow_car_classes.car_class
+JOIN
+	class_races
+ON
+	cars_info.car_class = class_races.car_class
+ORDER BY low_position_count DESC, average_position DESC;
